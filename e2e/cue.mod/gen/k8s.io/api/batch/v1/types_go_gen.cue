@@ -16,7 +16,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 
 // CronJobScheduledTimestampAnnotation is the scheduled timestamp annotation for the Job.
 // It records the original/expected scheduled timestamp for the running job, represented in RFC3339.
-// The CronJob controller adds this annotation if the CronJobsScheduledAnnotation feature gate (beta in 1.28) is enabled.
 #CronJobScheduledTimestampAnnotation: "batch.kubernetes.io/cronjob-scheduled-timestamp"
 #JobCompletionIndexAnnotation:        "batch.kubernetes.io/job-completion-index"
 
@@ -122,7 +121,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 // This is an action which might be taken on a pod failure - mark the
 // Job's index as failed to avoid restarts within this index. This action
 // can only be used when backoffLimitPerIndex is set.
-// This value is beta-level.
 #PodFailurePolicyActionFailIndex: #PodFailurePolicyAction & "FailIndex"
 
 // This is an action which might be taken on a pod failure - the counter towards
@@ -221,8 +219,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 	//   running pods are terminated.
 	// - FailIndex: indicates that the pod's index is marked as Failed and will
 	//   not be restarted.
-	//   This value is beta-level. It can be used when the
-	//   `JobBackoffLimitPerIndex` feature gate is enabled (enabled by default).
 	// - Ignore: indicates that the counter towards the .backoffLimit is not
 	//   incremented and a replacement pod is created.
 	// - Count: indicates that the pod is handled in the default way - the
@@ -258,7 +254,7 @@ _#labelPrefix: "batch.kubernetes.io/"
 #SuccessPolicy: {
 	// rules represents the list of alternative rules for the declaring the Jobs
 	// as successful before `.status.succeeded >= .spec.completions`. Once any of the rules are met,
-	// the "SucceededCriteriaMet" condition is added, and the lingering pods are removed.
+	// the "SuccessCriteriaMet" condition is added, and the lingering pods are removed.
 	// The terminal state for such a Job has the "Complete" condition.
 	// Additionally, these rules are evaluated in order; Once the Job meets one of the rules,
 	// other rules are ignored. At most 20 elements are allowed.
@@ -343,13 +339,12 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// When the field is specified, it must be immutable and works only for the Indexed Jobs.
 	// Once the Job meets the SuccessPolicy, the lingering pods are terminated.
 	//
-	// This field is beta-level. To use this field, you must enable the
-	// `JobSuccessPolicy` feature gate (enabled by default).
 	// +optional
 	successPolicy?: null | #SuccessPolicy @go(SuccessPolicy,*SuccessPolicy) @protobuf(16,bytes,opt)
 
 	// Specifies the number of retries before marking this job failed.
-	// Defaults to 6
+	// Defaults to 6, unless backoffLimitPerIndex (only Indexed Job) is specified.
+	// When backoffLimitPerIndex is specified, backoffLimit defaults to 2147483647.
 	// +optional
 	backoffLimit?: null | int32 @go(BackoffLimit,*int32) @protobuf(7,varint,opt)
 
@@ -359,8 +354,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// batch.kubernetes.io/job-index-failure-count annotation. It can only
 	// be set when Job's completionMode=Indexed, and the Pod's restart
 	// policy is Never. The field is immutable.
-	// This field is beta-level. It can be used when the `JobBackoffLimitPerIndex`
-	// feature gate is enabled (enabled by default).
 	// +optional
 	backoffLimitPerIndex?: null | int32 @go(BackoffLimitPerIndex,*int32) @protobuf(12,varint,opt)
 
@@ -372,8 +365,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// It can only be specified when backoffLimitPerIndex is set.
 	// It can be null or up to completions. It is required and must be
 	// less than or equal to 10^4 when is completions greater than 10^5.
-	// This field is beta-level. It can be used when the `JobBackoffLimitPerIndex`
-	// feature gate is enabled (enabled by default).
 	// +optional
 	maxFailedIndexes?: null | int32 @go(MaxFailedIndexes,*int32) @protobuf(13,varint,opt)
 
@@ -456,8 +447,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 	//
 	// When using podFailurePolicy, Failed is the the only allowed value.
 	// TerminatingOrFailed and Failed are allowed values when podFailurePolicy is not in use.
-	// This is an beta field. To use this, enable the JobPodReplacementPolicy feature toggle.
-	// This is on by default.
 	// +optional
 	podReplacementPolicy?: null | #PodReplacementPolicy @go(PodReplacementPolicy,*PodReplacementPolicy) @protobuf(14,bytes,opt,casttype=podReplacementPolicy)
 
@@ -471,8 +460,8 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// characters as defined by RFC 3986. The value cannot exceed 63 characters.
 	// This field is immutable.
 	//
-	// This field is alpha-level. The job controller accepts setting the field
-	// when the feature gate JobManagedBy is enabled (disabled by default).
+	// This field is beta-level. The job controller accepts setting the field
+	// when the feature gate JobManagedBy is enabled (enabled by default).
 	// +optional
 	managedBy?: null | string @go(ManagedBy,*string) @protobuf(15,bytes,opt)
 }
@@ -563,8 +552,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// represented as "1,3-5,7".
 	// The set of failed indexes cannot overlap with the set of completed indexes.
 	//
-	// This field is beta-level. It can be used when the `JobBackoffLimitPerIndex`
-	// feature gate is enabled (enabled by default).
 	// +optional
 	failedIndexes?: null | string @go(FailedIndexes,*string) @protobuf(10,bytes,opt)
 
@@ -651,14 +638,10 @@ _#labelPrefix: "batch.kubernetes.io/"
 
 // JobReasonSuccessPolicy reason indicates a SuccessCriteriaMet condition is added due to
 // a Job met successPolicy.
-// https://kep.k8s.io/3998
-// This is currently a beta field.
 #JobReasonSuccessPolicy: "SuccessPolicy"
 
 // JobReasonCompletionsReached reason indicates a SuccessCriteriaMet condition is added due to
 // a number of succeeded Job pods met completions.
-// - https://kep.k8s.io/3998
-// This is currently a beta field.
 #JobReasonCompletionsReached: "CompletionsReached"
 
 // JobCondition describes current state of a job.

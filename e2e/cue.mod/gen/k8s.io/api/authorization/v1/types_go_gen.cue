@@ -96,16 +96,10 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	name?: string @go(Name) @protobuf(7,bytes,opt)
 
 	// fieldSelector describes the limitation on access based on field.  It can only limit access, not broaden it.
-	//
-	// This field  is alpha-level. To use this field, you must enable the
-	// `AuthorizeWithSelectors` feature gate (disabled by default).
 	// +optional
 	fieldSelector?: null | #FieldSelectorAttributes @go(FieldSelector,*FieldSelectorAttributes) @protobuf(8,bytes,opt)
 
 	// labelSelector describes the limitation on access based on labels.  It can only limit access, not broaden it.
-	//
-	// This field  is alpha-level. To use this field, you must enable the
-	// `AuthorizeWithSelectors` feature gate (disabled by default).
 	// +optional
 	labelSelector?: null | #LabelSelectorAttributes @go(LabelSelector,*LabelSelectorAttributes) @protobuf(9,bytes,opt)
 }

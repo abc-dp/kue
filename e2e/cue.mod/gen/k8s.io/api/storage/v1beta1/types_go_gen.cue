@@ -142,8 +142,8 @@ import (
 }
 
 // VolumeAttachmentSource represents a volume that should be attached.
-// Right now only PersistenVolumes can be attached via external attacher,
-// in future we may allow also inline volumes in pods.
+// Right now only PersistentVolumes can be attached via external attacher,
+// in the future we may allow also inline volumes in pods.
 // Exactly one member can be set.
 #VolumeAttachmentSource: {
 	// persistentVolumeName represents the name of the persistent volume to attach.
@@ -199,6 +199,14 @@ import (
 	// information.
 	// +optional
 	message?: string @go(Message) @protobuf(2,bytes,opt)
+
+	// errorCode is a numeric gRPC code representing the error encountered during Attach or Detach operations.
+	//
+	// This is an optional, beta field that requires the MutableCSINodeAllocatableCount feature gate being enabled to be set.
+	//
+	// +featureGate=MutableCSINodeAllocatableCount
+	// +optional
+	errorCode?: null | int32 @go(ErrorCode,*int32) @protobuf(3,varint,opt)
 }
 
 // CSIDriver captures information about a Container Storage Interface (CSI)
@@ -248,8 +256,7 @@ import (
 	// and waits until the volume is attached before proceeding to mounting.
 	// The CSI external-attacher coordinates with CSI volume driver and updates
 	// the volumeattachment status when the attach operation is complete.
-	// If the CSIDriverRegistry feature gate is enabled and the value is
-	// specified to false, the attach operation will be skipped.
+	// If the value is specified to false, the attach operation will be skipped.
 	// Otherwise the attach operation will be called.
 	//
 	// This field is immutable.
@@ -389,6 +396,20 @@ import (
 	// +featureGate=SELinuxMountReadWriteOncePod
 	// +optional
 	seLinuxMount?: null | bool @go(SELinuxMount,*bool) @protobuf(8,varint,opt)
+
+	// nodeAllocatableUpdatePeriodSeconds specifies the interval between periodic updates of
+	// the CSINode allocatable capacity for this driver. When set, both periodic updates and
+	// updates triggered by capacity-related failures are enabled. If not set, no updates
+	// occur (neither periodic nor upon detecting capacity-related failures), and the
+	// allocatable.count remains static. The minimum allowed value for this field is 10 seconds.
+	//
+	// This is a beta feature and requires the MutableCSINodeAllocatableCount feature gate to be enabled.
+	//
+	// This field is mutable.
+	//
+	// +featureGate=MutableCSINodeAllocatableCount
+	// +optional
+	nodeAllocatableUpdatePeriodSeconds?: null | int64 @go(NodeAllocatableUpdatePeriodSeconds,*int64) @protobuf(9,varint,opt)
 }
 
 // FSGroupPolicy specifies if a CSI Driver supports modifying
